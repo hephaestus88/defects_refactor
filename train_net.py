@@ -8,16 +8,41 @@ from detector.engine import DetectorTrainer
 from detectron2.config import get_cfg, set_global_cfg
 from detectron2.engine import default_argument_parser, default_setup, launch
 from detectron2.evaluation import verify_results
+from detectron2.data.datasets import register_coco_instances
+
+#output directory for obj det model
+output_dir = "./output/object_detection"
+num_classes = 3
+
+device =  "cuda" # "cuda" or "cpu"
+
+train_dataset_name = "defect_train"
+train_images_path = "train"
+train_json_annot_path = "./train/_annotations.coco.json"
+
+val_dataset_name = "defect_val"
+val_images_path = "valid"
+val_json_annot_path = "./valid/_annotations.coco.json"
+
+test_dataset_name = "defect_test"
+test_images_path = "test"
+test_json_annot_path = "./test/_annotations.coco.json"
 
 
+cfg_save_path = "OD_cfg.pickle"
 
 def setup(args):
     """setup config"""
 
     cfg = get_cfg()  # Load default configs
-    add_det_config(cfg)  # Load all detection model configs
+    add_det_config(cfg, train_dataset_name, 
+                   val_dataset_name, 
+                   num_classes, 
+                   device, 
+                   output_dir)  # Load all detection model configs
     cfg.merge_from_file(args.config_file)  # Extend with config from specified file
     cfg.merge_from_list(args.opts)  # Extend with config specified in args
+
 
     print(cfg.dump())
     cfg.freeze()
@@ -29,6 +54,9 @@ def setup(args):
     return cfg
 
 def eval_mode(cfg):
+
+    if cfg.VIS_TEST:
+        assert cfg.USE_WANDB is True, "Plase enable your visualization"
 
     trainer = DetectorTrainer(cfg)
     trainer.resume_or_load(resume=False)
@@ -46,7 +74,8 @@ def main(args):
         if cfg.USE_WANDB:  # Set up wandb (for tracking scalars and visualizations)
             wandb.login()
             wandb.init(project=cfg.WANDB_PROJECT_NAME, config=cfg)
-       
+        else:
+            assert cfg.VIS_PEROID == 0, "Visualiztion are not supported"
 
     if args.eval_only:  # Run evaluation
         return eval_mode(cfg)
