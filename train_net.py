@@ -10,6 +10,10 @@ from detectron2.engine import default_argument_parser, default_setup, launch
 from detectron2.evaluation import verify_results
 from detectron2.data.datasets import register_coco_instances
 
+
+
+import os
+import pickle
 #output directory for obj det model
 output_dir = "./output/object_detection"
 num_classes = 3
@@ -17,16 +21,16 @@ num_classes = 3
 device =  "cuda" # "cuda" or "cpu"
 
 train_dataset_name = "defect_train"
-train_images_path = "train"
-train_json_annot_path = "./train/_annotations.coco.json"
+train_images_path = "datasets/train"
+train_json_annot_path = ".datasets/train/_annotations.coco.json"
 
 val_dataset_name = "defect_val"
-val_images_path = "valid"
-val_json_annot_path = "./valid/_annotations.coco.json"
+val_images_path = "datasets/valid"
+val_json_annot_path = ".datasets/valid/_annotations.coco.json"
 
 test_dataset_name = "defect_test"
-test_images_path = "test"
-test_json_annot_path = "./test/_annotations.coco.json"
+test_images_path = "datasets/test"
+test_json_annot_path = ".datasets/test/_annotations.coco.json"
 
 
 cfg_save_path = "OD_cfg.pickle"
@@ -69,6 +73,11 @@ def eval_mode(cfg):
 def main(args):
 
     cfg = setup(args)
+
+    with open(cfg_save_path, "wb") as f:
+        pickle.dump(cfg, f, protocol=pickle.HIGHEST_PROTOCOL)
+    
+    os.makedirs(cfg.OUTPUT_DIR, exist_ok=True)
 
     if comm.is_main_process():
         if cfg.USE_WANDB:  # Set up wandb (for tracking scalars and visualizations)
