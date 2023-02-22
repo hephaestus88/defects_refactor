@@ -8,7 +8,7 @@ from detector.checkpoint import WandbDetectionCheckpointer
 from detector.utils import WandbWriter
 
 from detectron2.data import MetadataCatalog
-from detectron2.engine import (DefaultTrainer, SimpleTrainer,AMPTrainer,
+from detectron2.engine import (DefaultTrainer, SimpleTrainer,AMPTrainer,TrainerBase,
                                create_ddp_model)
 from detectron2.evaluation import COCOEvaluator, PascalVOCDetectionEvaluator
 from detectron2.utils import comm
@@ -27,7 +27,7 @@ class DetectorTrainer(DefaultTrainer):
         Args:
             cfg (CfgNode):
         """
-        super().__init__()
+        TrainerBase.__init__(self)
         logger = logging.getLogger("detectron2")
         if not logger.isEnabledFor(logging.INFO):  # setup_logger is not called for d2
             setup_logger()
