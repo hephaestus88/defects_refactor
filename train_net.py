@@ -9,11 +9,11 @@ from detectron2.config import get_cfg, set_global_cfg
 from detectron2.engine import default_argument_parser, default_setup, launch
 from detectron2.evaluation import verify_results
 from detectron2.data.datasets import register_coco_instances
+from detectron2 import model_zoo
 
-
-
+import torch
 import os
-import pickle
+import gc
 #output directory for obj det model
 output_dir = "./output/object_detection"
 num_classes = 3
@@ -32,23 +32,43 @@ test_dataset_name = "defect_test"
 test_images_path = "datasets/test"
 test_json_annot_path = "./datasets/test/_annotations.coco.json"
 
+#register train dataset
+register_coco_instances(name = train_dataset_name, 
+                        metadata={}, 
+                        json_file=train_json_annot_path, 
+                        image_root=train_images_path)
+
+#register validation dataset
+register_coco_instances(name = val_dataset_name, 
+                        metadata={}, 
+                        json_file=val_json_annot_path, 
+                        image_root=val_images_path)
+
+#register test dataset
+register_coco_instances(name = test_dataset_name, 
+                        metadata={}, 
+                        json_file=test_json_annot_path, 
+                        image_root=test_images_path)
 
 cfg_save_path = "OD_cfg.pickle"
+
+
 
 def setup(args):
     """setup config"""
 
     cfg = get_cfg()  # Load default configs
+   
     add_det_config(cfg, train_dataset_name, 
                    val_dataset_name, 
                    num_classes, 
                    device, 
                    output_dir)  # Load all detection model configs
-    cfg.merge_from_file(args.config_file)  # Extend with config from specified file
+    # cfg.merge_from_file(args.config_file)  # Extend with config from specified file
+    cfg.merge_from_file(args.config_file)
     cfg.merge_from_list(args.opts)  # Extend with config specified in args
 
 
-    print(cfg.dump())
     cfg.freeze()
 
     set_global_cfg(cfg)  # Set up "global" access for config
@@ -70,13 +90,17 @@ def eval_mode(cfg):
 
     return res
 
+
+def clean_cuda_cache():
+        torch.cuda.empty_cache()
+        gc.collect()
+
 def main(args):
 
+    clean_cuda_cache()
     cfg = setup(args)
-
-    with open(cfg_save_path, "wb") as f:
-        pickle.dump(cfg, f, protocol=pickle.HIGHEST_PROTOCOL)
     
+
     os.makedirs(cfg.OUTPUT_DIR, exist_ok=True)
 
     if comm.is_main_process():
