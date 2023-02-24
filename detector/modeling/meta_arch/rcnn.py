@@ -1,19 +1,24 @@
+"""This is the adaptation of the orginal rcnn.py file from detectron2
+   This also refers to work from https://github.com/vlfom/CSD-detectron2
+"""
 import copy
 from typing import Any, Dict, List, Optional, Tuple
-
-import detectron2.data.transforms as T
 import numpy as np
 import torch
 import torch.nn.functional as F
 import wandb
+
 from detector.utils.img_log import log_visualization_to_wandb
+
 from detectron2.config import global_cfg
 from detectron2.data.detection_utils import convert_image_to_rgb
 from detectron2.modeling.meta_arch import GeneralizedRCNN
 from detectron2.modeling.meta_arch.build import META_ARCH_REGISTRY
 from detectron2.structures import Boxes, ImageList, Instances
-from detectron2.utils import comm
+import detectron2.data.transforms as T
 from detectron2.utils.events import get_event_storage
+from detectron2.utils import comm
+
 
 @META_ARCH_REGISTRY.register()
 class DetGeneralizedRCNN(GeneralizedRCNN):
@@ -117,11 +122,12 @@ class DetGeneralizedRCNN(GeneralizedRCNN):
         # visualize RPN proposals
         if do_visualize:
                 self._visualize_test_rpn_props(batched_inputs, proposals)  
-              
+        
         results, _ = self.roi_heads(images, features, proposals, None)
-         # visualize ROI predictions
+        # visualize ROI predictions
         if do_visualize:
                 self._visualize_test_roi_preds(batched_inputs, results) 
+      
 
         if do_postprocess:
             assert not torch.jit.is_scripting(), "Scripting is not supported for postprocess."
@@ -171,7 +177,7 @@ class DetGeneralizedRCNN(GeneralizedRCNN):
         # so that it yield instances instead of losses, etc.
         self.roi_heads.training = False
         with torch.no_grad():  # Make sure no gradients are changed
-            pred_instances, _ = self.roi_heads(ims, feats, props, None, supervised=True)
+            pred_instances, _ = self.roi_heads(ims, feats, props, None)
         self.roi_heads.training = True
 
         self._visualize_predictions(
@@ -206,6 +212,7 @@ class DetGeneralizedRCNN(GeneralizedRCNN):
             title_suffix=self._vis_test_counter,
         )
 
+
     def _visualize_predictions(
         self, batched_inputs, predictions, predictions_mode, viz_count, max_predictions, title_suffix=None
     ):
@@ -230,3 +237,4 @@ class DetGeneralizedRCNN(GeneralizedRCNN):
             viz_count -= 1  # Visualize up to `viz_count` images only
             if viz_count == 0:
                 break
+    
