@@ -11,7 +11,7 @@ from detectron2.data import MetadataCatalog
 from detectron2.engine import (DefaultTrainer, SimpleTrainer,AMPTrainer,TrainerBase,
                                create_ddp_model)
 from detectron2.evaluation import COCOEvaluator, PascalVOCDetectionEvaluator
-from detectron2.utils import comm
+
 from detectron2.utils.events import (CommonMetricPrinter, JSONWriter,
                                      TensorboardXWriter, get_event_storage)
 from detectron2.utils.logger import setup_logger
@@ -31,7 +31,7 @@ class DetectorTrainer(DefaultTrainer):
         logger = logging.getLogger("detectron2")
         if not logger.isEnabledFor(logging.INFO):  # setup_logger is not called for d2
             setup_logger()
-        cfg = DefaultTrainer.auto_scale_workers(cfg, comm.get_world_size())
+        cfg = DefaultTrainer.auto_scale_workers(cfg, cfg.DATALOADER.NUM_WORKERS)
 
         # Assume these objects must be constructed in this order.
         model = self.build_model(cfg)
