@@ -1,74 +1,46 @@
 import detector.modeling.meta_arch
 import detector.modeling.roi_heads
-import detectron2.data
-import detectron2.utils.comm as comm
-import wandb
 from detector.config import add_det_config
 from detector.engine import DetectorTrainer
+from detector.data.cocodata import *
+from detector.utils.utils import on_image
+
 from detectron2.config import get_cfg, set_global_cfg
 from detectron2.engine import default_argument_parser, default_setup, launch
 from detectron2.evaluation import verify_results
-from detectron2.data.datasets import register_coco_instances
-from detectron2 import model_zoo
+from detectron2.engine import DefaultPredictor
+import detectron2.utils.comm as comm
 
-import torch
 import os
-import gc
-#output directory for obj det model
-output_dir = "./output/object_detection"
-num_classes = 3
-
-device =  "cuda" # "cuda" or "cpu"
-
-train_dataset_name = "defect_train"
-train_images_path = "datasets/train"
-train_json_annot_path = "./datasets/train/_annotations.coco.json"
-
-val_dataset_name = "defect_val"
-val_images_path = "datasets/valid"
-val_json_annot_path = "./datasets/valid/_annotations.coco.json"
-
-test_dataset_name = "defect_test"
-test_images_path = "datasets/test"
-test_json_annot_path = "./datasets/test/_annotations.coco.json"
-
-#register train dataset
-register_coco_instances(name = train_dataset_name, 
-                        metadata={}, 
-                        json_file=train_json_annot_path, 
-                        image_root=train_images_path)
-
-#register validation dataset
-register_coco_instances(name = val_dataset_name, 
-                        metadata={}, 
-                        json_file=val_json_annot_path, 
-                        image_root=val_images_path)
-
-#register test dataset
-register_coco_instances(name = test_dataset_name, 
-                        metadata={}, 
-                        json_file=test_json_annot_path, 
-                        image_root=test_images_path)
-
-cfg_save_path = "OD_cfg.pickle"
-
-
+import glob
+import wandb
 
 def setup(args):
     """setup config"""
+    
+    device = args.device
+    num_classes = args.number  
+    output_dir = args.output
 
     cfg = get_cfg()  # Load default configs
    
-    add_det_config(cfg, train_dataset_name, 
+    add_det_config(
+                   cfg, 
+                   train_dataset_name, 
                    val_dataset_name, 
                    num_classes, 
                    device, 
-                   output_dir)  # Load all detection model configs
+                   output_dir
+                   )  # Load all detection model configs
     # cfg.merge_from_file(args.config_file)  # Extend with config from specified file
+
     cfg.merge_from_file(args.config_file)
     cfg.merge_from_list(args.opts)  # Extend with config specified in args
 
-
+    if args.demo_only:
+        cfg.MODEL.WEIGHTS = os.path.join('output/object_detection/', 
+                                 "model_final.pth")
+        
     cfg.freeze()
 
     set_global_cfg(cfg)  # Set up "global" access for config
@@ -90,14 +62,23 @@ def eval_mode(cfg):
 
     return res
 
+def demo_test(cfg):
+     """run trained model on test images and showing the test results"""
+     
+     predictor = DefaultPredictor(cfg)
+     directory = 'test_images'
+     
 
-def clean_cuda_cache():
-        torch.cuda.empty_cache()
-        gc.collect()
+     if not os.path.exists(directory):
+        os.makedirs(directory)
+     else:
+        print(f"Dirctory '{directory}'already exists")
+     for n, img in enumerate(glob.glob("datasets/test/*.jpg"), 1):
+        on_image(img, predictor, directory, n)
 
 def main(args):
 
-    clean_cuda_cache()
+    #clean_cuda_cache()
     cfg = setup(args)
     
 
@@ -112,17 +93,22 @@ def main(args):
 
     if args.eval_only:  # Run evaluation
         return eval_mode(cfg)
+    
+    if args.demo_only:
+         return demo_test(cfg)
 
     # setup trainer 
     trainer = DetectorTrainer(cfg)
     trainer.resume_or_load(resume=args.resume)
+    trainer.train()
 
-    return trainer.train()
+    wandb.finish()
+
 
 
 if __name__ == "__main__":
     args = default_argument_parser().parse_args()
-    print("Command Line Args:", args)
+    print("Command Line Arguments:", args)
     launch(
         main,
         args.num_gpus,
@@ -131,3 +117,6 @@ if __name__ == "__main__":
         dist_url=args.dist_url,
         args=(args,),
     )
+
+
+    
