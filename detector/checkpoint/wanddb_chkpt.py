@@ -9,8 +9,7 @@ from detectron2.config import global_cfg
 
 class WandbDetectionCheckpointer(DetectionCheckpointer):
     """Adds a few lines of code to upload the checkpoint to wandb.
-    See `d2.checkpoint.DetectionCheckpointer` and `fvcore.common.Checkpointer` for all details.
-    Changes are commented with "CSD: ...".
+    See `d2.checkpoint.DetectionCheckpointer` and `fvcore.common.Checkpointer` for all details.".
     """
 
     def save(self, name: str, **kwargs: Any) -> None:
