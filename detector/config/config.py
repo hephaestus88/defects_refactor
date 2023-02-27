@@ -4,7 +4,7 @@ from detectron2.config import CfgNode as CN
 def add_det_config(cfg, train_dataset_name, val_dataset_name, num_classes, device, output_dir):
     
     
-    cfg.MODEL.META_ARCHITECTURE = "GeneralizedRCNN"
+    cfg.MODEL.META_ARCHITECTURE = "DetGeneralizedRCNN"
     # dataset
     cfg.DATASETS.TRAIN = (train_dataset_name,)
     cfg.DATASETS.TEST = (val_dataset_name,)
