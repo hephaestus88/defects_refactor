@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Textile Defect Detector Tool
 
 This repository includes the tool for fabric defect detector for my final Ph. D. project based on [Detectron2](https://github.com/facebookresearch/detectron2) framework. It also used [W&B](https://wandb.ai/) as tool to monitor the training and inference process
@@ -138,3 +139,4 @@ MODEL.WEIGHTS           |     model weights  default="/path/to/weight.pth "
 
 ## Credits
 
+=======
